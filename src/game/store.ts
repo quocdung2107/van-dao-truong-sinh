@@ -1,10 +1,32 @@
 // Cầu nối Babylon -> React: emitter rất nhỏ, HUD được cập nhật ~5 lần/giây.
-// Lệnh có tham số dùng dạng 'skill:Q', 'method:luyen-the', 'eventChoice:0'.
-import type { Element, MethodId, SkillKey } from './data';
+// Lệnh có tham số dùng dạng 'skill:Q', 'method:luyen-the', 'eventChoice:0', 'travel:linh-khe',
+// 'enterDungeon:A', 'claimQuest:<id>', 'questChoice:<id>:<0|1>', 'learnTech:<id>', 'toggleTech:<id>',
+// 'equip:<itemId>', 'unequip:<slot>', 'useItem:<itemId>', 'buyItem:<itemId>', 'sellItem:<itemId>'.
+import type { Element, MethodId, SkillKey, LocationId, EquipSlot } from './data';
 
 export interface HudSkill { key: SkillKey; name: string; element: Element; cdLeft: number; cdTotal: number; mpCost: number; ready: boolean }
 export interface HudEvent { id: string; title: string; desc: string; choices: [string, string]; expiresIn: number }
 export interface HudBeast { name: string; hp: number; maxHp: number; alive: boolean; anyAlive: boolean; elite: boolean }
+
+// ---- Giai đoạn 2 ----
+export interface HudLocation {
+  id: LocationId; kind: 'map' | 'dungeonA' | 'dungeonB'; name: string; icon: string; desc: string;
+  unlocked: boolean; unlockLabel: string; current: boolean; auraLabel: string;
+}
+export interface HudDungeon {
+  active: boolean; kind: 'A' | 'B'; wave: number; room: number; phase: 'fighting' | 'complete';
+  bossShield: { hits: number; counterLabel: string } | null;
+}
+export interface HudQuest {
+  id: string; group: string; name: string; desc: string; kind: 'counter' | 'choice';
+  progress: number; target: number; state: 'active' | 'ready' | 'done' | 'hidden';
+  repeatable: boolean; rewardsText: string;
+  choices?: [string, string]; choiceRewardsText?: [string, string];
+}
+export interface HudTech {
+  id: string; name: string; element: Element; schoolLabel: string; desc: string; effectsLabel: string;
+  cost: number; unlockLabel: string; realmOk: boolean; learned: boolean; active: boolean;
+}
 
 export interface HudState {
   // Nhân vật
@@ -46,6 +68,18 @@ export interface HudState {
   tribActive: boolean;
   tribWave: number;
   tribWaves: number;
+  // Giai đoạn 2 — World
+  locationId: LocationId;
+  locationName: string;
+  locations: HudLocation[];
+  dungeon: HudDungeon | null;
+  quests: HudQuest[];
+  questReady: number;
+  techniques: HudTech[];
+  inventory: { id: string; qty: number }[];
+  equipped: Record<EquipSlot, string | null>;
+  invCount: number;
+  chronicle: string[];
 }
 
 export type GameCommand = string;

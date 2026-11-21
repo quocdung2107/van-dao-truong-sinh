@@ -107,14 +107,21 @@ export class Player {
     this.medParticles.start();
   }
 
+  /** Màu lưỡi kiếm theo phẩm vũ khí đang trang bị (Giai đoạn 2) */
+  private bladeTint: [number, number, number] = [0.35, 0.6, 1];
+
+  /** Đổi màu phát sáng của lưỡi kiếm theo vũ khí trang bị */
+  setBladeTint(rgb: [number, number, number]) { this.bladeTint = rgb; }
+
   /** t=0: kiếm sau lưng, t=1: kiếm trên tay phải */
   setSwordPose(t: number) {
     const back = { p: new Vector3(-0.25, 1.35, -0.32), rz: 0.7, rx: 0.3 };
     const hand = { p: new Vector3(0.36, 0.68, 0.05), rz: -0.25, rx: 0 };
     this.sword.position = Vector3.Lerp(back.p, hand.p, t);
     this.sword.rotation.set(back.rx + (hand.rx - back.rx) * t, 0, back.rz + (hand.rz - back.rz) * t);
-    const glow = t * 0.55;
-    this.swordBladeMat.emissiveColor = new Color3(0.1 + glow * 0.3, 0.15 + glow * 0.6, 0.2 + glow * 0.8);
+    const glow = 0.15 + t * 0.55;
+    const [r, g, b] = this.bladeTint;
+    this.swordBladeMat.emissiveColor = new Color3(r * glow, g * glow, b * glow);
   }
 
   startAttack() { if (this.attackT >= 1) this.attackT = 0; }

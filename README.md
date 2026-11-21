@@ -1,8 +1,10 @@
-# VẠN ĐẠO TRƯỜNG SINH — Giai đoạn 1: Core Gameplay
+# VẠN ĐẠO TRƯỜNG SINH — Giai đoạn 2: World
 
-Game tu tiên 3D trên web: **Thanh Vân Sơn** với hệ thống nhân vật đầy đủ (linh căn + trường phái), 4 phương pháp tu luyện + sự kiện kỳ ngộ, chiến đấu có **4 kỹ năng Q/E/R/F**, **3 loại yêu thú + tinh anh**, và **đột phá cảnh giới lớn phải vượt Thiên Kiếp**. Chạy hoàn toàn trên máy của bạn (không server, không đăng nhập, không database). Tiến trình được lưu tự động trong trình duyệt (localStorage, save phiên bản v2 — save prototype cũ v1 được tự động chuyển đổi: giữ tiến trình, chỉ cần tạo nhân vật).
+Game tu tiên 3D trên web. Giai đoạn 2 mở rộng thế giới: **3 bản đồ** (Thanh Vân Sơn · Linh Khê Cốc · Hắc Phong Lâm) mở khóa theo cảnh giới, **2 bí cảnh** (đợt quái 3 đợt + động phủ 3 gian có **boss Thạch Tượng dựng khiên phản hệ**), **hệ nhiệm vụ 4 nhóm** (12 nhiệm vụ), **10 công pháp** học bằng Ngộ Tính, và **túi đồ + trang bị + shop Linh Thạch** (14 trang bị, 3 đan dược). Toàn bộ nền Giai đoạn 1 (tạo nhân vật, 4 phương pháp tu luyện, sự kiện, 4 kỹ năng/trường phái, thiên kiếp) được giữ nguyên.
 
-Công nghệ: **Vite + React + TypeScript + Babylon.js 9.37** — nhân vật, yêu thú và cảnh vật dựng bằng hình khối 3D trong code, animation do code điều khiển.
+Chạy hoàn toàn trên máy của bạn (không server, không đăng nhập, không database). Tiến trình lưu tự động trong trình duyệt (localStorage, **save v3** — save v2/v1 cũ được tự động chuyển đổi: giữ nguyên nhân vật, tiến trình và Linh Thạch; bản đồ/túi đồ/nhiệm vụ bắt đầu mới).
+
+Công nghệ: **Vite + React + TypeScript + Babylon.js 9.37** — mọi cảnh vật, nhân vật, quái và boss dựng bằng hình khối 3D trong code, animation do code điều khiển.
 
 ---
 
@@ -27,19 +29,11 @@ npm run dev
 ```
 Mở trình duyệt vào **http://localhost:5173/** · Muốn dừng: `Ctrl + C` trong cửa sổ Command Prompt.
 
-> Lần sau chơi tiếp chỉ cần Bước 4. Muốn chơi lại từ đầu (xóa cả nhân vật): nút **↺ Chơi lại** trong game.
+> Lần sau chơi tiếp chỉ cần Bước 4. Muốn chơi lại từ đầu: nút **↺ Chơi lại** trong game.
 
 ---
 
-## Tạo nhân vật (mới ở Giai đoạn 1)
-Lần đầu vào game sẽ gặp màn hình tạo nhân vật:
-- **Đạo hiệu:** tên nhân vật của bạn.
-- **Linh căn (ngũ hành):** Kim / Mộc / Thủy / Hỏa / Thổ — kỹ năng cùng hệ với linh căn được **+15% sát thương**, và ngũ hành tương khắc cho ±20% (xem dưới).
-- **Trường phái:** quyết định chỉ số nền và bộ 4 kỹ năng (bảng dưới).
-
-Sau đó bấm **👤 Nhân vật (phím I)** trong game để xem chỉ số suy ra: Công, Thủ, Tốc độ, Bạo kích — tính từ cảnh giới × hệ số Căn Cơ (0.7 + 0.3×CănCơ/100) × hệ số trường phái.
-
-## Điều khiển
+## Điều khiển (bổ sung phím mới của Giai đoạn 2)
 
 | Phím / Thao tác | Hành động |
 |---|---|
@@ -47,70 +41,96 @@ Sau đó bấm **👤 Nhân vật (phím I)** trong game để xem chỉ số su
 | **Kéo chuột** | Xoay camera · **Lăn chuột**: zoom |
 | **Space** | Né — lướt nhanh, bất tử 0.35 giây |
 | **Click chuột trái** | Đánh thường bằng kiếm (tự rút kiếm) |
-| **Q / E / R / F** | 4 kỹ năng của trường phái (xem bảng kỹ năng) |
-| **C** | Thiền / đứng dậy — dùng phương pháp tu luyện đang chọn |
-| **Tab** | Bật/tắt **Tự Động** săn quái (tự dùng kỹ năng Q khi hết hồi chiêu) |
-| **I** | Mở/đóng bảng Nhân vật |
+| **Q / E / R / F** | 4 kỹ năng của trường phái |
+| **C** | Thiền / đứng dậy |
+| **Tab** | Bật/tắt **Tự Động** săn quái |
+| **M** | Panel **Bản đồ & Bí cảnh** (mới) |
+| **J** | Panel **Nhiệm vụ** + Thiên Đạo Ký Lục (mới) |
+| **K** | Panel **Công pháp** (mới) |
+| **B** | Panel **Túi đồ / Trang bị / Shop** (mới) |
+| **I** | Panel Nhân vật |
 
-> Thay đổi so với prototype: phím **R** giờ là kỹ năng R (không còn là rút/cất kiếm — kiếm tự rút khi đánh hoặc dùng kỹ năng; vẫn có nút Rút Kiếm trên màn hình), phím **F** là kỹ năng kết liễu (đánh thường chuyển hẳn sang click chuột).
+Các panel là lớp phủ bật/tắt — chỉ mở 1 panel tại một thời điểm, không che kín cảnh 3D khi đóng.
 
-## 4 phương pháp tu luyện (chọn trong panel trái, áp dụng khi thiền)
-| Phương pháp | Hiệu quả |
-|---|---|
-| 🧘 **Tĩnh Tọa** | Cân bằng: Tu Vi ×3, Căn Cơ +0.6/s, thỉnh thoảng đốn ngộ +1 Ngộ Tính |
-| 🌀 **Vận Chu Thiên** | Tu Vi ×4.5, thêm ×1.3 nhờ linh căn tương hợp; Căn Cơ chỉ +0.1/s |
-| 🪨 **Luyện Thể** | Tu Vi ×1.5, Căn Cơ +1.5/s — vững nền để đột phá |
-| ✨ **Ngộ Đạo** | Tu Vi ×1, mỗi ~8 giây +1 Ngộ Tính |
+## 3 bản đồ (phím M)
+| Bản đồ | Mở khóa | Đặc điểm |
+|---|---|---|
+| 🏔️ **Thanh Vân Sơn** | Từ đầu | Linh khí trung hòa (Tu Vi thiền ×1.0), quái như cũ (chỉ số ×1.0) |
+| 🌿 **Linh Khê Cốc** | **Luyện Khí** | Thung lũng xanh, hồ linh + suối, hoa linh phát sáng, đom đóm. Thiền định **Tu Vi ×1.5**. Quái Thủy Xà + Mộc Tinh mạnh ×1.3 |
+| 🌑 **Hắc Phong Lâm** | **Trúc Cơ** | Rừng đen sương tím, trăng đỏ, cây khô. Thiền **Tu Vi ×1.2, Căn Cơ ×1.5** (môi trường khắc nghiệt rèn nền tảng). Quái mạnh ×1.8, tinh anh 30%, có **Ám Ảnh Lang** (hệ Kim) |
 
-**Sự kiện tu luyện:** khi đang thiền, mỗi ~45–90 giây có thể xuất hiện kỳ ngộ (thẻ vàng giữa màn hình, 20 giây để chọn): **Đốn Ngộ** (+3 Ngộ Tính hoặc +60 Tu Vi), **Linh Khí Dị Biến** (mạo hiểm +130 Tu Vi/−10 Căn Cơ hoặc an toàn +25), **Tâm Ma** (−30 Tu Vi hoặc dùng 2 Ngộ Tính trấn áp +8 Căn Cơ).
+Bản đồ đang ở được lưu vào save — lần sau vào game sẽ ở đúng bản đồ đó.
 
-## Bảng kỹ năng theo trường phái (Q / E / R / F)
-| Trường phái | Q — chủ lực | E — diện rộng/khống chế | R — hỗ trợ bản thân | F — kết liễu |
+## 2 bí cảnh (vào từ panel Bản đồ — phím M)
+### 🕳️ Yêu Thú Sào Huyệt (mở ở Luyện Khí)
+Đấu trường hang đá: **3 đợt quái** (2 → 3 → 4 con, đợt sau mạnh hơn). Quét sạch cả 3 đợt để mở rương: **+120 Tu Vi, Linh Thạch theo cảnh giới, chắc chắn rơi 1 trang bị**. Quái trong bí cảnh chết là hết, không hồi sinh.
+
+### 🏛️ Cổ Tu Động Phủ (mở ở Trúc Cơ)
+3 gian phòng nối tiếp trên một đấu trường, **kết giới** chắn giữa các gian — dọn sạch gian mới mở được gian kế:
+- **Gian 1:** 2 yêu thú gác cổng.
+- **Gian 2:** 3 yêu thú + **trận pháp cổ**: cứ ~4.5 giây có vòng đỏ sét đánh tại vị trí của bạn (báo trước 1 giây) — vừa đánh vừa né.
+- **Gian 3:** 👹 **Hộ Pháp Thạch Tượng** — boss khổng lồ (HP ~×8 lang thường), có **đòn dậm đất diện rộng** (vòng đỏ 1.2 giây rồi giáng xuống, sát thương nặng). Khi boss còn **50% HP**, nó dựng **KHIÊN 5 lớp**: đòn khác hệ chỉ gây 10% sát thương và không phá khiên; chỉ đòn đúng **hệ khắc** (boss hệ Thổ → dùng kỹ năng/đánh thường hệ **Mộc**) mới trừ khiên. Phá khiên → boss **choáng 3 giây**, chịu +50% sát thương. HUD luôn hiện gợi ý hệ cần dùng.
+- Hạ boss: **+300 Tu Vi, +200 Linh Thạch, chắc chắn rơi trang bị phẩm cao nhất theo cảnh giới** + ghi vào Thiên Đạo Ký Lục.
+
+Quy tắc chung: bấm **🚪 Rời bí cảnh** (panel phải hoặc panel bản đồ) để ra. **Chết trong bí cảnh = bị đẩy về bản đồ trước đó với 30% HP**, không mất thêm gì. Tiến trình bí cảnh không lưu giữa chừng — rời game giữa chừng là làm lại từ đầu.
+
+## Nhiệm vụ (phím J) — 12 nhiệm vụ, 4 nhóm
+- **Thiên Đạo (lặp lại):** Trừ Yêu (hạ quái), Tĩnh Tu (giây thiền), Tiến Cảnh (đột phá) — nhận thưởng xong mục tiêu tăng dần, làm tiếp được mãi.
+- **Kỳ Ngộ (chọn 1 trong 2, 1 lần):** Di Vật Cổ Nhân (đạt Luyện Khí), Thương Nhân Bí Ẩn (hạ 15 quái), Tiền Bối Truyền Pháp (kiếm 300 Linh Thạch) — hiện trong panel khi đủ điều kiện, chọn phần thưởng nào là mất phần còn lại.
+- **Tông Môn:** Săn 2 tinh anh · Dẹp Sào Huyệt · Tích lũy 500 Linh Thạch.
+- **Thám Hiểm:** Đặt chân đủ 3 bản đồ · Vượt Cổ Tu Động Phủ · Diệt Thạch Tượng.
+
+Hoàn thành nhiệm vụ sẽ có thông báo 🎉 trong game; vào panel J bấm **Nhận thưởng** (Tu Vi / Linh Thạch / Ngộ Tính / Căn Cơ / vật phẩm). Panel J cũng chứa **📜 Thiên Đạo Ký Lục** — dòng thời gian các cột mốc: hạ tinh anh đầu tiên, dẹp Sào Huyệt, diệt Thạch Tượng, kết Kim Đan...
+
+## Công pháp (phím K) — 10 cuốn, 2 cuốn mỗi trường phái
+Học bằng **Ngộ Tính** (2–6 điểm), yêu cầu cảnh giới tối thiểu. **Chỉ tối đa 2 cuốn đang KÍCH HOẠT mới có hiệu lực** — đổi kích hoạt tùy ý, miễn phí.
+
+| Trường phái | Cuốn 1 | Cuốn 2 |
+|---|---|---|
+| Kiếm Tu | Kiếm Ý Thông Minh (✨2): Sát thương +8%, Bạo +3% | Thanh Phong Kiếm Pháp (✨4, Luyện Khí): Tu Vi +15%, Hồi chiêu −10% |
+| Pháp Tu | Hỏa Diệm Quyết (✨2): Sát thương +10% | Cửu Chuyển Linh Pháp (✨5, Trúc Cơ): Tu Vi +20%, Hồi Linh Lực +30% |
+| Thể Tu | Kim Cang Thể Phách (✨2): Căn Cơ tăng +25%, Sát thương +4% | Long Tượng Bàn Nhược Công (✨6, Trúc Cơ): Sát thương +14%, Căn Cơ +15% |
+| Đan Tu | Đan Đạo Tâm Kinh (✨2): Tu Vi +10%, Căn Cơ +10% | Thảo Mộc Linh Quyết (✨4, Luyện Khí): Hồi Linh Lực +25%, Tu Vi +10% |
+| Phù Trận Tu | Tụ Linh Trận Pháp (✨3): Tu Vi +18% | Ngũ Hành Trận Đồ (✨5, Trúc Cơ): Hồi chiêu −15%, Sát thương +8% |
+
+Hiệu ứng áp dụng thật vào: tốc độ Tu Vi khi tu luyện, tốc độ tăng Căn Cơ, sát thương đánh thường + kỹ năng, bạo kích, hồi Linh Lực, hồi chiêu kỹ năng.
+
+## Túi đồ · Trang bị · Shop (phím B)
+**14 trang bị** ở 4 ô — Vũ Khí / Áo Giáp / Giày / Ngọc Bội — 4 phẩm **Phàm → Hoàng → Huyền → Địa**, mỗi món cộng chỉ số thật (Công/Thủ/HP/Linh Lực/Tốc độ/Bạo kích) vào chỉ số nhân vật. Trang bị vũ khí còn **đổi màu phát sáng của lưỡi kiếm** theo phẩm.
+
+| Ô | Phàm | Hoàng | Huyền | Địa |
 |---|---|---|---|---|
-| 🗡️ **Kiếm Tu** (Kim, bạo 20%) | Kiếm Khí Trảm ×1.6 (10 MP, 3s) | Vạn Kiếm Quy Tông ×1.1 vùng (20 MP, 8s) | Kiếm Tâm Thông Minh: +35% tốc độ 6s (12 MP, 14s) | Thiên Ngoại Phi Tiên ×3.2 (35 MP, 15s) |
-| 🔥 **Pháp Tu** (Hỏa, Linh Lực cao) | Hỏa Cầu Thuật ×1.7 tầm xa (12 MP, 2.5s) | Liệt Diễm Phần Thiên ×1.3 vùng lớn (25 MP, 9s) | Linh Khí Hộ Thể: khiên 45/8s (15 MP, 14s) | Cửu Thiên Huyền Hỏa ×3.0 vùng (40 MP, 16s) |
-| 🪨 **Thể Tu** (Thổ, HP/Thủ cao) | Băng Sơn Quyền ×1.5 (8 MP, 2.5s) | Địa Liệt Ba ×1.0 quanh thân (18 MP, 8s) | Kim Cương Bất Hoại: khiên 65/8s (12 MP, 14s) | Phá Thiên Kích ×2.8 (30 MP, 14s) |
-| ⚗️ **Đan Tu** (Mộc, tự hồi phục) | Đan Hỏa ×1.4 (10 MP, 3s) | Độc Vụ Mạn Thiên ×1.1 vùng (20 MP, 9s) | Hồi Xuân Đan: hồi 35% HP (18 MP, 16s) | Phần Thiên Đan Lô ×2.6 vùng (35 MP, 15s) |
-| 🌀 **Phù Trận Tu** (Thủy, khống chế) | Băng Phù ×1.5 + chậm 2s (11 MP, 2.8s) | Khốn Tiên Trận ×0.8 vùng + chậm 3s (22 MP, 10s) | Tụ Linh Trận: khiên 35/8s (14 MP, 14s) | Ngũ Hành Phù Diệt ×2.9 vùng lớn (38 MP, 16s) |
+| Vũ Khí | Thanh Mộc Kiếm (Công +4) | Huyền Thiết Kiếm (Công +9, Bạo +2%) | Lưu Hỏa Kiếm (Công +16, Bạo +3%) | Địa Tâm Cổ Kiếm (Công +26, Bạo +4%) |
+| Áo | Bố Y (Thủ +3, HP +15) | Linh Tàm Bảo Y (Thủ +7, HP +35) | Huyền Vũ Giáp (Thủ +13, HP +70) | Địa Long Bì Giáp (Thủ +20, HP +120) |
+| Giày | Tật Phong Ngoa (Tốc +0.3) | Vân Du Ngoa (Tốc +0.6, Thủ +2) | Lăng Ba Ngoa (Tốc +1.0, Thủ +4) | — |
+| Ngọc Bội | Linh Thạch Trụy (Linh Lực +15) | Tụ Linh Ngọc Bội (LL +30, Công +3) | Ngũ Hành Châu (LL +50, Công +6, Bạo +2%) | — |
 
-Sát thương kỹ năng = Công × hệ số × tương khắc ngũ hành × (cùng hệ linh căn: ×1.15). Bạo kích ×1.5, hiện số vàng lớn. Số sát thương bay hiện trên đầu quái.
+**3 đan dược tiêu hao:** Hồi Huyết Đan (hồi 50% HP · 20💰), Hồi Linh Đan (đầy Linh Lực · 25💰), Tụ Linh Đan (+80 Tu Vi · 40💰).
 
-**Ngũ hành tương khắc:** Kim khắc Mộc · Mộc khắc Thổ · Thổ khắc Thủy · Thủy khắc Hỏa · Hỏa khắc Kim (khắc: +20%, bị khắc: −20%).
+**Nguồn vật phẩm:** quái rơi (thường 12%, tinh anh 40% — phẩm tối đa theo cảnh giới, tinh anh +1 bậc) · rương Sào Huyệt + boss Thạch Tượng (chắc chắn rơi) · thưởng nhiệm vụ · **shop** trong panel Túi đồ (bán đan dược + trang bị Phàm/Hoàng). Trang bị thừa **bán lại** lấy Linh Thạch ngay trong túi đồ. Món phẩm Huyền/Địa không bán trong shop — chỉ rơi từ quái/bí cảnh/boss.
 
-## Yêu thú (mới: 3 loại + tinh anh)
-Tối đa **4 con** cùng lúc trên núi, hồi sinh sau 5 giây khi bị hạ:
-| Quái | Hệ | Đặc điểm | Phần thưởng |
-|---|---|---|---|
-| Hắc Phong Lang | Hỏa | Cân bằng (HP 120) | +30 Tu Vi, 8–15 Linh Thạch |
-| Mộc Tinh | Mộc | Khổng lồ, HP 230, chậm, đánh đau | +45 Tu Vi, 12–20 Linh Thạch |
-| Thủy Xà | Thủy | HP 80 nhưng đuổi rất nhanh | +25 Tu Vi, 6–12 Linh Thạch |
-| ⭐ **Tinh Anh** (20%) | ngẫu nhiên theo loại | To hơn, viền vàng, HP ×3, thưởng ×2, 50% rơi +1 Ngộ Tính | gấp đôi |
+## Giữ nguyên từ Giai đoạn 1
+Tạo nhân vật (5 linh căn × 5 trường phái) · tương khắc ngũ hành ±20% · 4 phương pháp tu luyện + 3 sự kiện kỳ ngộ khi thiền · 4 kỹ năng Q/E/R/F mỗi trường phái (hồi chiêu + Linh Lực + hiệu ứng) · số sát thương bay + bạo kích · 3 loại quái + tinh anh · đột phá tiểu cảnh theo công thức 60 + 0.4×CănCơ − độ khó · **Thiên Kiếp** 3 đợt sét khi lên cảnh giới mới · chế độ Tự Động (Tab).
 
-**Linh Thạch** là tiền tệ mới — hiện tích lũy và hiển thị trong panel (nơi tiêu sẽ có ở các giai đoạn sau: luyện đan, động phủ...).
+> Lưu ý phím: **R/F là kỹ năng** (đánh thường bằng click chuột) — giữ nguyên từ Giai đoạn 1. Phím panel mới M/J/K/B không trùng với phím chiến đấu nào.
 
-## Đột phá & Thiên Kiếp
-- Đột phá **tiểu cảnh** như cũ: cần Tu Vi đầy + Căn Cơ ≥ 50, tỉ lệ = 60 + 0.4×CănCơ − độ khó (kẹp 5–95%). Thất bại: −15% Tu Vi tiểu cảnh, −15 Căn Cơ, không tụt cảnh giới.
-- Đột phá **lên cảnh giới mới** (Đại Viên Mãn → cảnh giới kế): phải vượt **🌩️ Thiên Kiếp** trước — **3 đợt sét**, mỗi đợt 3 tia nhắm quanh bạn: vòng đỏ hiện **1.2 giây** để né (chạy hoặc Space lướt), đứng trong vòng khi sét đánh sẽ mất HP. Vượt qua cả 3 đợt → tung tỉ lệ đột phá với **+10% bonus**. Gục ngã giữa kiếp (HP về 0) = đột phá thất bại với hình phạt như thường, HP hồi lại 30%.
-
-Cảnh giới: **Luyện Thể → Luyện Khí → Trúc Cơ → Kim Đan**, mỗi cảnh giới 4 tiểu cảnh.
-
-## Giai đoạn 1 CÓ gì / CHƯA có gì
-**Có (mới):** tạo nhân vật (tên + 5 linh căn + 5 trường phái) · chỉ số suy ra + bảng nhân vật · tương khắc ngũ hành · 4 phương pháp tu luyện · 3 sự kiện tu luyện có lựa chọn · 4 kỹ năng/trường phái có hồi chiêu + tốn Linh Lực + hiệu ứng vòng/đạn bay · số sát thương bay + bạo kích · 3 loại quái + tinh anh (tối đa 4 con) · Linh Thạch · Thiên Kiếp 3 đợt khi lên cảnh giới · lưu v2 (tự chuyển đổi từ save cũ).
-**Giữ nguyên từ prototype:** cảnh Thanh Vân Sơn · đi/thiền/rút kiếm · camera thứ ba · chế độ Tự Động (nay nhắm quái gần nhất + tự dùng kỹ năng Q) · né Space.
-**Chưa có (đúng phạm vi):** bản đồ mới/bí cảnh · nhiệm vụ · công pháp/pháp bảo/túi đồ · động phủ/luyện đan (nơi tiêu Linh Thạch) · đăng nhập/database/offline server · model 3D ngoài · âm thanh.
+## Giai đoạn 2 CÓ gì / CHƯA có gì
+**Có (mới):** 3 bản đồ du hành tức thì + lưu bản đồ · linh khí từng map (Tu Vi/Căn Cơ) · quái nhân hệ số theo map + Ám Ảnh Lang · 2 bí cảnh (3 đợt quái / 3 gian phòng + bẫy sét + boss có khiên phản hệ và đòn dậm đất) · 12 nhiệm vụ 4 nhóm + nhận thưởng + Thiên Đạo Ký Lục · 10 công pháp học bằng Ngộ Tính, kích hoạt tối đa 2 · túi đồ + 14 trang bị 4 ô + 3 đan dược + rơi đồ + shop/mua/bán bằng Linh Thạch · kiếm đổi màu theo vũ khí · lưu v3 (tự chuyển đổi từ v2/v1).
+**Chưa có (đúng phạm vi):** động phủ/luyện đan · offline progress/server · đăng nhập/database · linh thú · model 3D ngoài · âm thanh. Nơi tiêu Linh Thạch hiện tại: shop trang bị/đan dược + (sau này) luyện đan, động phủ.
 
 ## Cấu trúc code
 ```
-src/game/   data.ts (cảnh giới, ngũ hành, linh căn, trường phái, kỹ năng, phương pháp, quái, thiên kiếp)
-            cultivation.ts (tu luyện + phương pháp + sự kiện + đột phá + lưu v2/migration v1)
-            scene.ts (môi trường) · player.ts (nhân vật) · beast.ts (3 loại quái + tinh anh)
-            fx.ts (số sát thương bay, vòng kỹ năng, đạn bay, sét + vòng đỏ thiên kiếp)
-            Game.ts (vòng lặp, combat, kỹ năng, auto, thiên kiếp) · store.ts (cầu nối Babylon -> React)
-src/ui/     HUD.tsx (giao diện + thanh kỹ năng + thẻ sự kiện) · CreationScreen.tsx (tạo nhân vật)
+src/game/   data.ts (cảnh giới, ngũ hành, trường phái, kỹ năng, quái + boss, ĐỊA ĐIỂM, CÔNG PHÁP, VẬT PHẨM, NHIỆM VỤ)
+            cultivation.ts (tu luyện + save v3/migration + túi đồ/trang bị + công pháp + nhiệm vụ + ký lục)
+            scene.ts (dựng môi trường theo từng địa điểm, dispose sạch khi du hành)
+            player.ts (nhân vật, kiếm đổi màu theo vũ khí) · beast.ts (quái + tinh anh + boss golem: khiên/dậm đất)
+            fx.ts (số sát thương, vòng kỹ năng, đạn bay, sét + vòng đỏ)
+            Game.ts (vòng lặp, combat, auto, thiên kiếp, du hành, bí cảnh) · store.ts (cầu nối Babylon -> React)
+src/ui/     HUD.tsx (HUD + panel Bản đồ/Nhiệm vụ/Công pháp/Túi đồ/Nhân vật) · CreationScreen.tsx (tạo nhân vật)
 docs/       Bộ tài liệu kiến trúc Giai đoạn A+B
 ```
 
 ## Ghi chú kỹ thuật
-- Build kiểm tra: `npm run build` (TypeScript + Vite) — đạt, 0 lỗi. Bundle ~1.48 MB gzip (gần như không đổi so với prototype 1.47 MB).
+- Build kiểm tra: `npm run build` (TypeScript + Vite) — đạt, 0 lỗi. Bundle ~1.50 MB gzip (Giai đoạn 1: 1.48 MB — tăng nhẹ do dữ liệu + panel mới).
 - Cần trình duyệt hỗ trợ WebGL2 (Chrome/Edge/Firefox bản mới đều có).
-- Bước tiếp theo theo `docs/MVP_ROADMAP.md`: Giai đoạn 2 — World (3 bản đồ, bí cảnh, nhiệm vụ, công pháp, pháp bảo).
+- Bước tiếp theo theo `docs/MVP_ROADMAP.md`: Giai đoạn 3 — Idle (offline progress, bế quan, động phủ, luyện đan/luyện khí).

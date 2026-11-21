@@ -157,3 +157,65 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0b1526; colo
   .skill-name { display: none; }
   .trib-banner { font-size: 13.5px; }
 }
+
+/* ===== Giai đoạn 2 ===== */
+.loc-line { font-size: 12.5px; color: #7dd3fc; margin-bottom: 8px; }
+.dungeon-status { margin-top: 9px; font-size: 13px; color: #fda4af; font-weight: 600; line-height: 1.5; }
+.boss-shield-hint { margin-top: 6px; font-size: 12px; color: #fde68a; background: rgba(120, 53, 15, .45); border: 1px solid rgba(253, 224, 71, .4); border-radius: 8px; padding: 6px 8px; font-weight: 500; }
+.exit-btn { margin-top: 8px; }
+.exit-btn.wide { width: 100%; margin-top: 4px; }
+.btn.small { padding: 6px 11px; font-size: 12.5px; }
+.btn.claim { background: #15803d; border-color: #4ade80; color: #fff; }
+.btn-badge {
+  display: inline-grid; place-items: center; min-width: 19px; height: 19px; margin-left: 6px;
+  border-radius: 10px; background: #dc2626; color: #fff; font-size: 11.5px; font-weight: 800; padding: 0 5px;
+  vertical-align: 2px;
+}
+
+.overlay-panel {
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%); z-index: 9;
+  width: min(680px, calc(100% - 24px)); max-height: calc(100% - 210px); overflow-y: auto;
+  background: rgba(8, 16, 32, 0.93); border: 1px solid rgba(125, 211, 252, 0.45);
+  border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(8px);
+}
+.overlay-panel.narrow { width: min(430px, calc(100% - 24px)); }
+.overlay-head { display: flex; justify-content: space-between; align-items: center; font-size: 16.5px; font-weight: 800; color: #a5f3fc; margin-bottom: 10px; }
+
+.loc-card, .quest-card, .tech-card, .item-card {
+  display: flex; gap: 10px; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px; padding: 9px 11px; margin-bottom: 8px;
+}
+.loc-card.current { border-color: rgba(74, 222, 128, .6); background: rgba(21, 60, 35, .35); }
+.loc-card-main, .quest-main, .tech-main { flex: 1; min-width: 0; }
+.loc-name, .quest-name, .tech-name { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+.loc-desc, .quest-desc { font-size: 12.3px; color: #cbd5e1; line-height: 1.45; margin-top: 2px; }
+.loc-aura { font-size: 11.8px; color: #7dd3fc; margin-top: 3px; }
+.badge-here { font-size: 11px; background: #15803d; color: #fff; border-radius: 8px; padding: 2px 7px; margin-left: 6px; vertical-align: 2px; }
+.badge-repeat { font-size: 10.5px; background: rgba(14, 116, 144, .8); color: #e0f2fe; border-radius: 8px; padding: 2px 7px; margin-left: 5px; vertical-align: 2px; }
+
+.quest-group { margin-bottom: 13px; }
+.quest-group-title { font-size: 13.5px; font-weight: 800; color: #fde68a; margin: 10px 0 7px; }
+.quest-card.done { opacity: 0.62; }
+.quest-progress { font-size: 12px; color: #93c5fd; margin-top: 3px; }
+.quest-choices { display: flex; flex-direction: column; gap: 6px; }
+.quest-choices .btn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; font-size: 12.5px; }
+.choice-reward { font-size: 11.5px; color: #86efac; font-weight: 700; }
+.chronicle-line { font-size: 12.8px; color: #fde68a; padding: 3px 0; }
+
+.tech-card.active { border-color: rgba(253, 224, 71, .6); background: rgba(80, 60, 8, .3); }
+.tech-school { font-size: 11.8px; color: #94a3b8; font-weight: 500; }
+.tech-effects { font-size: 12.3px; color: #86efac; margin-top: 3px; font-weight: 600; }
+
+.equip-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 6px; }
+.equip-slot { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: 8px 10px; }
+.equip-slot-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+.equip-slot-name { font-size: 13px; font-weight: 700; color: #f1f5f9; margin: 3px 0; }
+.equip-slot-stats { font-size: 11.8px; color: #86efac; margin-bottom: 5px; }
+.tier-badge { font-size: 10.5px; background: rgba(168, 85, 247, .55); color: #f3e8ff; border-radius: 7px; padding: 2px 6px; margin-left: 4px; vertical-align: 2px; }
+.item-qty { color: #7dd3fc; font-weight: 800; }
+
+@media (max-width: 760px) {
+  .overlay-panel { max-height: calc(100% - 240px); }
+  .loc-card, .quest-card, .tech-card, .item-card { flex-wrap: wrap; }
+}
