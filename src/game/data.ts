@@ -396,17 +396,32 @@ export interface ItemDef {
   sellPrice: number;
   desc: string;
   swordRgb?: [number, number, number]; // màu phát sáng lưỡi kiếm khi trang bị vũ khí
-  effect?: 'healHp' | 'restoreMp' | 'gainTuVi';
+  effect?: 'healHp' | 'restoreMp' | 'gainTuVi' | 'breakthroughBonus';
   effectValue?: number;
 }
-export function itemStatsLabel(it: ItemDef): string {
+/** Chỉ số hiệu dụng của trang bị sau cường hóa: mỗi cấp +10% chỉ số gốc (Giai đoạn 3) */
+export function effectiveItemStats(it: ItemDef, enhance = 0): ItemStats {
+  const s = it.stats ?? {};
+  if (enhance <= 0) return s;
+  const m = 1 + 0.1 * enhance;
+  const out: ItemStats = {};
+  if (s.atk) out.atk = Math.round(s.atk * m);
+  if (s.def) out.def = Math.round(s.def * m);
+  if (s.hp) out.hp = Math.round(s.hp * m);
+  if (s.mp) out.mp = Math.round(s.mp * m);
+  if (s.speed) out.speed = Math.round(s.speed * m * 10) / 10;
+  if (s.crit) out.crit = Math.round(s.crit * m);
+  return out;
+}
+export function itemStatsLabel(it: ItemDef, enhance = 0): string {
   if (it.kind === 'consumable') {
     if (it.effect === 'healHp') return `Hồi ${Math.round((it.effectValue ?? 0) * 100)}% HP`;
     if (it.effect === 'restoreMp') return 'Hồi đầy Linh Lực';
     if (it.effect === 'gainTuVi') return `+${it.effectValue} Tu Vi ngay`;
+    if (it.effect === 'breakthroughBonus') return `Lần đột phá tới +${it.effectValue}% tỉ lệ`;
     return it.desc;
   }
-  const s = it.stats ?? {};
+  const s = effectiveItemStats(it, enhance);
   const parts: string[] = [];
   if (s.atk) parts.push(`Công +${s.atk}`);
   if (s.def) parts.push(`Thủ +${s.def}`);
@@ -439,6 +454,8 @@ export const ITEMS: ItemDef[] = [
   { id: 'hoi-huyet-dan', name: 'Hồi Huyết Đan', kind: 'consumable', price: 20, sellPrice: 8, effect: 'healHp', effectValue: 0.5, desc: 'Đan dược hồi phục 50% HP ngay lập tức.' },
   { id: 'hoi-linh-dan', name: 'Hồi Linh Đan', kind: 'consumable', price: 25, sellPrice: 10, effect: 'restoreMp', effectValue: 1, desc: 'Hồi đầy Linh Lực ngay lập tức.' },
   { id: 'tu-linh-dan', name: 'Tụ Linh Đan', kind: 'consumable', price: 40, sellPrice: 16, effect: 'gainTuVi', effectValue: 80, desc: 'Luyện hóa ngay +80 Tu Vi (không vượt quá ngưỡng tiểu cảnh).' },
+  // Giai đoạn 3: chỉ luyện bằng Luyện Đan ở Động Phủ, shop không bán
+  { id: 'do-kiep-dan', name: 'Độ Kiếp Đan', kind: 'consumable', sellPrice: 40, effect: 'breakthroughBonus', effectValue: 15, desc: 'Đan dược quý luyện tại Động Phủ: lần đột phá tiếp theo +15% tỉ lệ thành công (dùng trước khi đột phá, mất khi đã tung tỉ lệ).' },
 ];
 export function itemById(id: string): ItemDef | undefined { return ITEMS.find((i) => i.id === id); }
 export const SHOP_IDS: string[] = [
@@ -502,6 +519,110 @@ export const QUESTS: QuestDef[] = [
   { id: 'th-dong-phu', group: 'Thám Hiểm', name: 'Thám Hiểm · Cổ Tu Động Phủ', desc: 'Thám hiểm thành công Cổ Tu Động Phủ 1 lần.', kind: 'counter', counter: 'dungeonBClears', target: 1, rewards: { linhThach: 150, itemId: 'hoi-linh-dan', itemQty: 2 } },
   { id: 'th-diet-tuong', group: 'Thám Hiểm', name: 'Thám Hiểm · Diệt Thạch Tượng', desc: 'Đánh bại Hộ Pháp Thạch Tượng trong Cổ Tu Động Phủ.', kind: 'counter', counter: 'bossKills', target: 1, rewards: { ngoTinh: 5, linhThach: 100 } },
 ];
+
+// =====================================================================
+// GIAI ĐOẠN 3 — Idle: Offline / Bế quan / Động phủ / Luyện đan / Luyện khí
+// =====================================================================
+
+// ---------- Bế quan ----------
+export const SECLUSION = {
+  /** Tu Vi = tốc độ thiền Tĩnh Tọa × 2.5 */
+  tuViRateMult: 2.5,
+  canCoPerSecond: 0.2,
+};
+
+// ---------- Offline progress ----------
+export const OFFLINE = {
+  /** Vắng mặt tối thiểu mới tính offline (giây) */
+  minSeconds: 300,
+  /** Trần số quái ước tính khi săn offline */
+  huntMaxKills: 400,
+  /** Một con quái offline nhanh nhất cũng tốn chừng này giây (tránh số quái bùng nổ) */
+  huntMinKillSeconds: 5,
+  huntMaxKillSeconds: 60,
+  /** Hệ số DPS ước tính (trộn đánh thường + kỹ năng) so với chỉ số Công */
+  huntDpsFactor: 1.15,
+  /** Linh Thảo trung bình mỗi con quái khi săn offline */
+  linhThaoPerKill: 0.5,
+  /** Xác suất rơi đồ mỗi "lượt rơi" offline; tối đa 2 vật phẩm / phiên */
+  dropChancePerRoll: 0.6,
+  maxDropRolls: 2,
+  killsPerDropRoll: 15,
+};
+
+// ---------- Động phủ: Tụ Linh Trận ----------
+export const SPIRIT_ARRAY = {
+  maxLevel: 5,
+  /** Chi phí Linh Thạch nâng từ cấp i -> i+1 */
+  costs: [100, 250, 600, 1400, 3000],
+  /** Cấp 1-4: mỗi cấp +4% Tu Vi thiền; cấp 5: thêm +10% (thay vì thêm giờ cap) */
+  tuViPctPerLevel: 4,
+  level5TuViPct: 10,
+  capBaseHours: 8,
+  capPerLevelHours: 1,
+  capMaxHours: 12,
+};
+/** Hệ số nhân Tu Vi thiền + trần giờ offline theo cấp Tụ Linh Trận */
+export function spiritArrayBonus(level: number): { tuViMul: number; capSeconds: number } {
+  const lv = Math.max(0, Math.min(SPIRIT_ARRAY.maxLevel, level));
+  const tuViMul = 1
+    + (SPIRIT_ARRAY.tuViPctPerLevel / 100) * Math.min(lv, 4)
+    + (lv >= 5 ? SPIRIT_ARRAY.level5TuViPct / 100 : 0);
+  const capHours = Math.min(SPIRIT_ARRAY.capMaxHours, SPIRIT_ARRAY.capBaseHours + SPIRIT_ARRAY.capPerLevelHours * lv);
+  return { tuViMul, capSeconds: capHours * 3600 };
+}
+
+// ---------- Động phủ: Linh Điền ----------
+export const LINH_FIELD = {
+  maxLevel: 3,
+  /** Chi phí nâng từ cấp i -> i+1 (cấp 0->1 là "xây") */
+  costs: [
+    { linhThach: 150, linhThao: 0 },
+    { linhThach: 400, linhThao: 20 },
+    { linhThach: 900, linhThao: 60 },
+  ] as { linhThach: number; linhThao: number }[],
+  /** Sản lượng Linh Thảo / giờ theo cấp (cấp 0 = chưa xây) */
+  ratePerHour: [0, 6, 12, 24],
+  /** Kho chứa tối đa = sản lượng của ngần này giờ */
+  storageCapHours: 48,
+};
+export function fieldRatePerHour(level: number): number {
+  return LINH_FIELD.ratePerHour[Math.max(0, Math.min(LINH_FIELD.maxLevel, level))] ?? 0;
+}
+export function fieldStorageCap(level: number): number {
+  return fieldRatePerHour(level) * LINH_FIELD.storageCapHours;
+}
+
+// ---------- Luyện đan ----------
+export interface RecipeDef {
+  itemId: string;
+  linhThao: number;
+  linhThach: number;
+  successRate: number; // 0..1
+}
+export const RECIPES: RecipeDef[] = [
+  { itemId: 'hoi-huyet-dan', linhThao: 3, linhThach: 10, successRate: 0.8 },
+  { itemId: 'hoi-linh-dan', linhThao: 3, linhThach: 10, successRate: 0.8 },
+  { itemId: 'tu-linh-dan', linhThao: 6, linhThach: 25, successRate: 0.8 },
+  { itemId: 'do-kiep-dan', linhThao: 12, linhThach: 80, successRate: 0.7 },
+];
+export function recipeByItemId(itemId: string): RecipeDef | undefined {
+  return RECIPES.find((r) => r.itemId === itemId);
+}
+
+// ---------- Luyện khí ----------
+export const FORGE = {
+  craftTinhHoa: 3,
+  craftLinhThach: 120,
+  enhanceTinhHoa: 2,
+  /** Linh Thạch cường hóa = base × (cấp hiện tại + 1) */
+  enhanceLinhThachBase: 50,
+  maxEnhance: 5,
+  statPctPerEnhance: 10,
+};
+export function enhanceCost(currentEnhance: number): { tinhHoa: number; linhThach: number } {
+  return { tinhHoa: FORGE.enhanceTinhHoa, linhThach: FORGE.enhanceLinhThachBase * (currentEnhance + 1) };
+}
 
 // ---------- Thiên kiếp ----------
 export const TRIBULATION = {

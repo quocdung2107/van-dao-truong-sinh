@@ -12,7 +12,8 @@ import {
   computeStats, mitigate, elementFactor, ROOT_SKILL_BONUS, ELEMENT_RGB,
   schoolById, ELEMENT_LABEL, locationById, beastTypeById, itemById,
   lootTierCap, equipPoolForTierCap,
-  type SkillDef, type SkillKey, type CultEventDef, type LocationDef, type LocationId, type EquipSlot,
+  SPIRIT_ARRAY, LINH_FIELD, spiritArrayBonus, fieldRatePerHour, fieldStorageCap, methodById,
+  type SkillDef, type SkillKey, type CultEventDef, type LocationDef, type LocationId, type EquipSlot, type MethodId,
 } from './data';
 
 type AutoPhase = 'SEEK' | 'ATTACK' | 'RETREAT' | 'MEDITATE';
@@ -84,6 +85,10 @@ export class Game {
   private prevMapId: LocationId = 'thanh-van';
   private trapStrikes: { pos: Vector3; mesh: Mesh; t: number }[] = [];
 
+  // Giai đoạn 3: bế quan + offline
+  private seclusion = false;
+  private simulatingOffline = false;
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.engine = new Engine(canvas, true, { stencil: true });
@@ -108,6 +113,20 @@ export class Game {
 
     this.bindInput();
     this.disposers.push(bridge.onCommand((c) => this.handleCommand(c)));
+
+    // Giai đoạn 3: lưu phiên hoạt động khi ẩn tab / đóng trang (để tính offline lúc quay lại)
+    const saveSession = () => { if (!this.simulatingOffline) this.stampActivity(); };
+    const onVis = () => { if (document.visibilityState === 'hidden') saveSession(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('beforeunload', saveSession);
+    this.disposers.push(() => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('beforeunload', saveSession);
+    });
+
+    // Tính thành quả offline (nếu có báo cáo chờ nhận từ phiên trước thì giữ nguyên, không tính lại)
+    this.cultivation.prepareOffline(Date.now());
+    this.stampActivity();
     this.emitHud();
 
     this.engine.runRenderLoop(() => {
@@ -276,11 +295,12 @@ export class Game {
     c.counters.dungeonAClears += 1;
     const lt = 60 + c.stageIndex * 8;
     c.gainLinhThach(lt);
+    c.tinhHoa += 2; // Giai đoạn 3: dẹp bí cảnh +2 Tinh Hoa
     c.addTuVi(120);
     const drop = this.rollDrop(1, true);
     let dropMsg = '';
     if (drop) { c.addItem(drop.id, drop.qty); dropMsg = ` Rương báu rơi: ${drop.name}!`; }
-    c.message = `🎉 Vượt qua Yêu Thú Sào Huyệt! +120 Tu Vi, +${lt} Linh Thạch.${dropMsg} Bấm "Rời bí cảnh" để trở ra.`;
+    c.message = `🎉 Vượt qua Yêu Thú Sào Huyệt! +120 Tu Vi, +${lt} Linh Thạch, +2 Tinh Hoa.${dropMsg} Bấm "Rời bí cảnh" để trở ra.`;
     c.addChronicle('Một mình dẹp sạch Yêu Thú Sào Huyệt.');
     c.save();
     this.afterProgressEvent(true);
@@ -292,6 +312,7 @@ export class Game {
     c.counters.dungeonBClears += 1;
     if (this.run) this.run.phase = 'complete';
     c.gainLinhThach(200);
+    c.tinhHoa += 5; // Giai đoạn 3: boss rơi 5 Tinh Hoa
     c.addTuVi(300);
     // Boss chắc chắn rơi trang bị phẩm cao nhất theo cảnh giới
     const cap = lootTierCap(c.stageIndex, 2);
@@ -300,7 +321,7 @@ export class Game {
     const pickFrom = pool.length ? pool : fullPool;
     const item = pickFrom[Math.floor(Math.random() * pickFrom.length)];
     if (item) c.addItem(item.id, 1);
-    c.message = `👹 HỘ PHÁP THẠCH TƯỢNG ĐÃ GỤC NGÃ! +300 Tu Vi, +200 Linh Thạch${item ? `, rơi bảo vật: ${item.name}` : ''}! Bấm "Rời bí cảnh" để trở ra.`;
+    c.message = `👹 HỘ PHÁP THẠCH TƯỢNG ĐÃ GỤC NGÃ! +300 Tu Vi, +200 Linh Thạch, +5 Tinh Hoa${item ? `, rơi bảo vật: ${item.name}` : ''}! Bấm "Rời bí cảnh" để trở ra.`;
     c.addChronicle('Đánh bại Hộ Pháp Thạch Tượng, đoạt bảo vật Cổ Tu Động Phủ.');
     c.save();
     this.afterProgressEvent(true);
@@ -331,8 +352,65 @@ export class Game {
     return best;
   }
 
+  /** Hoạt động offline suy ra từ trạng thái hiện tại: bế quan > tự động săn (auto) > thiền theo phương pháp */
+  private currentActivity(): { kind: 'meditate' | 'seclusion' | 'hunt'; mapId: LocationId; methodId: MethodId } {
+    return {
+      kind: this.seclusion ? 'seclusion' : this.autoMode ? 'hunt' : 'meditate',
+      mapId: this.inDungeon ? this.prevMapId : this.loc.id,
+      methodId: this.cultivation.methodId,
+    };
+  }
+  /** Ghi dấu "vừa hoạt động lúc này" + hoạt động offline tương ứng, rồi lưu */
+  private stampActivity() {
+    this.cultivation.offlineActivity = this.currentActivity();
+    this.cultivation.lastActiveAt = Date.now();
+    this.cultivation.save();
+  }
+
+  private setSeclusion(v: boolean) {
+    if (v === this.seclusion) return;
+    if (v) {
+      if (this.inDungeon) { this.cultivation.message = 'Trong bí cảnh không thể bế quan.'; this.emitHud(); return; }
+      if (this.trib) { this.cultivation.message = 'Đang độ thiên kiếp — không thể bế quan!'; this.emitHud(); return; }
+      this.setAuto(false); this.autoMode = false;
+      this.seclusion = true;
+      this.meditating = true;
+      this.pendingEvent = null;
+      this.cultivation.message = '🏯 BẾ QUAN: Tu Vi theo Tĩnh Tọa ×2.5, Căn Cơ +0.2/s. Kết giới hộ thể — yêu thú không quấy nhiễu. Bấm "Xuất quan" để dừng.';
+    } else {
+      this.seclusion = false;
+      this.meditating = false;
+      this.cultivation.message = 'Đã xuất quan. Đạo tâm thêm vững.';
+    }
+    this.emitHud();
+  }
+
   private handleCommand(c: string) {
     const cul = this.cultivation;
+    // Giai đoạn 3 — lệnh Idle dùng được cả khi đang bế quan
+    if (c === 'toggleSeclusion') { this.setSeclusion(!this.seclusion); this.emitHud(); return; }
+    if (c === 'claimOffline') {
+      const r = cul.claimOffline();
+      if (r) cul.message = `📜 Đã nhận thành quả offline: +${r.tuVi} Tu Vi${r.linhThach ? `, +${r.linhThach} Linh Thạch` : ''}${r.linhThao ? `, +${r.linhThao} Linh Thảo` : ''}${r.items.length ? `, vật phẩm: ${r.items.map((i) => i.name).join(', ')}` : ''}.`;
+      this.emitHud(); return;
+    }
+    if (c === 'debugOffline') {
+      this.simulatingOffline = true; // chặn beforeunload ghi đè mốc thời gian giả lập
+      cul.debugSimulateOffline(2);
+      window.location.reload();
+      return;
+    }
+    if (c === 'upgradeArray') { cul.message = cul.upgradeSpiritArray(); this.emitHud(); return; }
+    if (c === 'upgradeField') { cul.message = cul.upgradeLinhField(); this.emitHud(); return; }
+    if (c === 'harvestField') { cul.accrueFieldLive(Date.now()); cul.message = cul.harvestField(); this.emitHud(); return; }
+    if (c.startsWith('craft:')) { cul.message = cul.craftRecipe(c.slice(6)); this.emitHud(); return; }
+    if (c.startsWith('forgeCraft:')) { cul.message = cul.forgeCraft(c.slice(11) as EquipSlot); this.emitHud(); return; }
+    if (c.startsWith('enhance:')) { cul.message = cul.enhanceInstance(c.slice(8)); this.emitHud(); return; }
+    if (c.startsWith('sellEquip:')) { cul.message = cul.sellEquipment(c.slice(10)); this.emitHud(); return; }
+    if (this.seclusion && c !== 'resetSave') {
+      cul.message = '🏯 Đang bế quan — hãy "Xuất quan" trước khi làm việc khác.';
+      this.emitHud(); return;
+    }
     if (c === 'toggleMeditate') this.setMeditating(!this.meditating);
     else if (c === 'toggleSword') this.setSword(!this.swordDrawn);
     else if (c === 'toggleAuto') this.setAuto(!this.autoMode);
@@ -362,6 +440,7 @@ export class Game {
     else if (c === 'resetSave') {
       this.cleanupTrib();
       this.pendingEvent = null;
+      this.seclusion = false;
       cul.reset();
       this.env = this.loadLocation(locationById('thanh-van'));
       this.hp = this.stats.maxHp; this.mp = this.stats.maxMp; this.shield = 0;
@@ -373,6 +452,10 @@ export class Game {
     const it = itemById(itemId);
     const cul = this.cultivation;
     if (!it || it.kind !== 'consumable') { cul.message = 'Vật phẩm này không dùng trực tiếp được.'; return; }
+    if (it.effect === 'breakthroughBonus' && cul.breakthroughBonus) {
+      cul.message = 'Độ Kiếp Đan trước vẫn còn hiệu lực (+15% lần đột phá tới) — chưa cần dùng thêm.';
+      return;
+    }
     if (!cul.removeItem(itemId, 1)) { cul.message = `Không có ${it.name} trong túi.`; return; }
     if (it.effect === 'healHp') {
       const amount = this.stats.maxHp * (it.effectValue ?? 0.5);
@@ -384,17 +467,21 @@ export class Game {
     } else if (it.effect === 'gainTuVi') {
       cul.addTuVi(it.effectValue ?? 80);
       cul.message = `Luyện hóa ${it.name}: +${it.effectValue ?? 80} Tu Vi!`;
+    } else if (it.effect === 'breakthroughBonus') {
+      cul.breakthroughBonus = true;
+      cul.message = `Đã uống ${it.name}: lần đột phá tiếp theo +15% tỉ lệ thành công!`;
     }
     cul.save();
   }
 
   private syncSwordTint() {
-    const wid = this.cultivation.equipped.weapon;
-    const it = wid ? itemById(wid) : undefined;
+    const inst = this.cultivation.equippedInstance('weapon');
+    const it = inst ? itemById(inst.itemId) : undefined;
     this.player.setBladeTint(it?.swordRgb ?? [0.35, 0.6, 1]);
   }
 
   private setMeditating(v: boolean) {
+    if (this.seclusion) return; // bế quan: thiền bị khóa, chỉ "Xuất quan" mới thoát
     if (this.trib && v) return;
     this.meditating = v;
     if (v) this.cultivation.message = `${this.cultivation.method.name} — ${this.cultivation.method.desc}`;
@@ -440,7 +527,7 @@ export class Game {
   }
 
   private tryDodge() {
-    if (this.dodgeT > 0) return;
+    if (this.seclusion || this.dodgeT > 0) return;
     const dir = this.moveDirection();
     this.dodgeDir.copyFrom(dir.lengthSquared() > 0.01 ? dir : new Vector3(Math.sin(this.player.root.rotation.y), 0, Math.cos(this.player.root.rotation.y)));
     this.dodgeT = 0.25; this.invulnT = 0.35;
@@ -448,7 +535,7 @@ export class Game {
   }
 
   private tryAttack() {
-    if (this.trib) return;
+    if (this.trib || this.seclusion) return;
     if (!this.swordDrawn) this.setSword(true);
     if (this.attackCooldown > 0 || this.meditating) return;
     this.attackCooldown = 0.55;
@@ -458,7 +545,7 @@ export class Game {
 
   // ---------------- Kỹ năng ----------------
   private castSkill(key: SkillKey) {
-    if (this.trib) return;
+    if (this.trib || this.seclusion) return;
     const def = this.skillDefs.find((s) => s.key === key);
     if (!def) return;
     if (this.cooldowns[key] > 0) return;
@@ -551,11 +638,20 @@ export class Game {
     c.counters.killsByType[b.typeDef.id] = (c.counters.killsByType[b.typeDef.id] ?? 0) + 1;
     if (b.elite) {
       c.counters.eliteKills += 1;
+      c.tinhHoa += 1; // Giai đoạn 3: tinh anh rơi 1 Tinh Hoa
       if (c.counters.eliteKills === 1) c.addChronicle('Lần đầu hạ yêu thú tinh anh ⭐.');
     }
     if (b.boss) { this.handleBossKill(); return; }
     const r = b.rewards();
     c.addBeastReward(r.tuVi, r.linhThach, r.insight, b.displayName);
+    if (b.elite) c.message += ' ✨ +1 Tinh Hoa (tinh anh).';
+    // Giai đoạn 3: 30% rơi 1-3 Linh Thảo
+    if (Math.random() < 0.3) {
+      const thao = 1 + Math.floor(Math.random() * 3);
+      c.linhThao += thao;
+      c.message += ` 🌿 +${thao} Linh Thảo.`;
+      c.save();
+    }
     const dropChance = b.elite ? 0.4 : 0.12;
     if (Math.random() < dropChance) {
       const drop = this.rollDrop(b.elite ? 1 : 0);
@@ -709,6 +805,7 @@ export class Game {
   }
 
   private updateEvents(dt: number) {
+    if (this.seclusion) return; // bế quan tâm vô tạp niệm — không phát sinh sự kiện
     if (this.pendingEvent) {
       this.pendingEvent.expires -= dt;
       if (this.pendingEvent.expires <= 0) {
@@ -840,6 +937,7 @@ export class Game {
     let moving = false;
     const pos = this.player.root.position;
 
+    if (this.seclusion) this.dodgeT = 0; // bế quan: khóa mọi di chuyển
     if (this.dodgeT > 0) {
       this.dodgeT -= dt;
       this.movePlayer(this.dodgeDir, 13, dt);
@@ -856,7 +954,7 @@ export class Game {
 
     const beastsSnapshot = this.beasts;
     for (const b of beastsSnapshot) {
-      const res = b.update(dt, pos, this.time, { ignorePlayer: !!this.trib });
+      const res = b.update(dt, pos, this.time, { ignorePlayer: !!this.trib || this.seclusion });
       if (res.attacked) this.damagePlayer(res.dmg, b.displayName);
       // damagePlayer có thể khiến người chơi bị đẩy khỏi bí cảnh -> beasts đã bị dispose, dừng ngay
       if (this.beasts !== beastsSnapshot) break;
@@ -885,7 +983,7 @@ export class Game {
     this.updateTribulation(dt);
     this.updateDungeon(dt);
     this.updateEvents(dt);
-    this.cultivation.tick(dt, this.meditating, { auraTuVi: this.loc.auraTuVi, auraCanCo: this.loc.auraCanCo });
+    this.cultivation.tick(dt, this.meditating, { auraTuVi: this.loc.auraTuVi, auraCanCo: this.loc.auraCanCo, seclusion: this.seclusion });
     const st = this.stats;
     this.hp = Math.min(st.maxHp, this.hp + dt * (this.meditating ? 2.5 : 0.6));
     this.mp = Math.min(st.maxMp, this.mp + dt * 4 * (1 + this.cultivation.techEffects().mpRegenPct / 100));
@@ -898,7 +996,12 @@ export class Game {
     this.hudT -= dt;
     if (this.hudT <= 0) { this.hudT = 0.2; this.emitHud(); }
     this.saveT -= dt;
-    if (this.saveT <= 0) { this.saveT = 5; this.cultivation.save(); this.afterProgressEvent(); }
+    if (this.saveT <= 0) {
+      this.saveT = 5;
+      this.cultivation.accrueFieldLive(Date.now()); // Linh Điền tích lũy dần
+      this.stampActivity(); // cập nhật lastActiveAt + hoạt động offline rồi lưu
+      this.afterProgressEvent();
+    }
   }
 
   private updateAuto(dt: number): boolean {
@@ -1002,10 +1105,66 @@ export class Game {
         learned: c.learnedTechs.includes(t.id), active: c.activeTechs.includes(t.id),
       })),
       inventory: c.inventory.map((e) => ({ id: e.id, qty: e.qty })),
+      equipBag: c.equipInstances
+        .filter((i) => c.isInBag(i))
+        .map((i) => ({ uid: i.uid, itemId: i.itemId, enhance: i.enhance })),
       equipped: { ...c.equipped },
+      equippedDetail: {
+        weapon: this.equipDetail('weapon'), armor: this.equipDetail('armor'),
+        boots: this.equipDetail('boots'), accessory: this.equipDetail('accessory'),
+      },
       invCount: c.invCount(),
       chronicle: [...c.chronicle],
+      // Giai đoạn 3
+      linhThao: c.linhThao,
+      tinhHoa: c.tinhHoa,
+      seclusion: this.seclusion,
+      doKiepBonus: c.breakthroughBonus,
+      offlineReport: this.offlineHudReport(),
+      mansion: this.mansionHud(),
     });
+  }
+
+  private equipDetail(slot: EquipSlot) {
+    const inst = this.cultivation.equippedInstance(slot);
+    return inst ? { uid: inst.uid, itemId: inst.itemId, enhance: inst.enhance } : null;
+  }
+
+  private offlineHudReport() {
+    const r = this.cultivation.pendingOffline;
+    if (!r) return null;
+    const loc = locationById(r.activity.mapId);
+    const activityLabel = r.activity.kind === 'seclusion'
+      ? '🏯 Bế quan'
+      : r.activity.kind === 'hunt'
+        ? `🏹 Tự động săn quái tại ${loc.name}`
+        : `🧘 Thiền (${methodById(r.activity.methodId).name}) tại ${loc.name}`;
+    return {
+      elapsedSeconds: r.elapsedSeconds, countedSeconds: r.countedSeconds, capSeconds: r.capSeconds,
+      activityKind: r.activity.kind, activityLabel,
+      tuVi: r.tuVi, canCo: Math.round(r.canCo * 10) / 10, ngoTinh: r.ngoTinh,
+      linhThach: r.linhThach, linhThao: r.linhThao, kills: r.kills,
+      items: r.items.map((i) => ({ name: i.name, qty: i.qty })),
+      fieldGained: r.fieldGained,
+    };
+  }
+
+  private mansionHud() {
+    const c = this.cultivation;
+    c.accrueFieldLive(Date.now());
+    const arr = spiritArrayBonus(c.buildings.spiritArray);
+    const fieldLv = c.buildings.linhField;
+    return {
+      spiritLevel: c.buildings.spiritArray,
+      spiritNextCost: c.buildings.spiritArray < SPIRIT_ARRAY.maxLevel ? SPIRIT_ARRAY.costs[c.buildings.spiritArray] : null,
+      spiritTuViMul: arr.tuViMul,
+      offlineCapHours: Math.round(arr.capSeconds / 3600),
+      fieldLevel: fieldLv,
+      fieldNextCost: fieldLv < LINH_FIELD.maxLevel ? LINH_FIELD.costs[fieldLv] : null,
+      fieldRatePerHour: fieldRatePerHour(fieldLv),
+      fieldStored: Math.floor(c.fieldStored),
+      fieldCap: fieldStorageCap(fieldLv),
+    };
   }
 
   resize() { this.engine.resize(); }

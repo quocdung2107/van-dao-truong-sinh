@@ -36,7 +36,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <div className="game-title">🏔️ VẠN ĐẠO TRƯỜNG SINH <span>— Giai đoạn 2: World</span></div>
+      <div className="game-title">🏔️ VẠN ĐẠO TRƯỜNG SINH <span>— Giai đoạn 3: Idle</span></div>
       <canvas ref={canvasRef} className="game-canvas" />
       {hasChar && <HUD />}
       {!hasChar && <CreationScreen onCreate={handleCreate} />}
